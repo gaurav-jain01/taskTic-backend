@@ -1,0 +1,19 @@
+{
+  "name": "tasktic-backend",
+  "version": "1.0.0",
+  "description": "TaskTic backend with MongoDB schemas and Express app structure.",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "firebase-admin": "^11.11.0",
+    "mongoose": "^7.5.0",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
