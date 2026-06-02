@@ -1,7 +1,10 @@
 import express from 'express';
 import { getTasks, createTask, updateTask, deleteTask } from '../controllers/task.controller.js';
+import { verifyAuthToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+router.use(verifyAuthToken);
 
 router.get('/', getTasks);
 router.post('/', createTask);

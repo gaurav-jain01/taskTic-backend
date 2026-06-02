@@ -49,3 +49,68 @@ export const getTeams = async (req, res) => {
     res.status(500).json({ error: 'Server error while fetching teams' });
   }
 };
+
+export const updateTeam = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, memberIds } = req.body;
+
+    const team = await Team.findById(id);
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+
+    if (name) team.name = name;
+    if (description !== undefined) team.description = description;
+
+    await team.save();
+
+    if (memberIds && Array.isArray(memberIds)) {
+      // First, remove this teamId from all users who currently have it
+      await User.updateMany(
+        { teamId: team._id },
+        { $unset: { teamId: "" } }
+      );
+
+      // Then, set this teamId for the new memberIds
+      if (memberIds.length > 0) {
+        await User.updateMany(
+          { _id: { $in: memberIds } },
+          { $set: { teamId: team._id } }
+        );
+      }
+      
+      // Ensure admin always stays in the team
+      await User.findByIdAndUpdate(team.adminId, { $set: { teamId: team._id } });
+    }
+
+    res.json({ message: 'Team updated successfully', team });
+  } catch (error) {
+    console.error('Error updating team:', error);
+    res.status(500).json({ error: 'Server error while updating team' });
+  }
+};
+
+export const deleteTeam = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const team = await Team.findById(id);
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found' });
+    }
+
+    // Remove teamId from all members
+    await User.updateMany(
+      { teamId: team._id },
+      { $unset: { teamId: "" } }
+    );
+
+    await Team.findByIdAndDelete(id);
+
+    res.json({ message: 'Team deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting team:', error);
+    res.status(500).json({ error: 'Server error while deleting team' });
+  }
+};

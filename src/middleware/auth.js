@@ -1,35 +1,27 @@
-import admin from 'firebase-admin';
+import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
 
-function initFirebaseAdmin() {
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
-    });
-  }
-}
-
-export async function verifyFirebaseToken(req, res, next) {
-  initFirebaseAdmin();
-
+export async function verifyAuthToken(req, res, next) {
   const authHeader = req.headers.authorization || req.headers.Authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Authorization header missing or invalid' });
   }
 
-  const idToken = authHeader.split(' ')[1];
+  const token = authHeader.split(' ')[1];
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const user = await User.findOne({ firebaseUid: decodedToken.uid }).select('name email role teamId');
+    const jwtSecret = process.env.JWT_SECRET || 'fallback_secret_key_change_in_production';
+    const decodedToken = jwt.verify(token, jwtSecret);
+    
+    const user = await User.findById(decodedToken.id).select('name email role teamId firebaseUid');
 
     if (!user) {
-      return res.status(401).json({ error: 'User record not found for authenticated Firebase user' });
+      return res.status(401).json({ error: 'User record not found' });
     }
 
     req.user = {
       id: user._id,
-      firebaseUid: decodedToken.uid,
+      firebaseUid: user.firebaseUid,
       name: user.name,
       email: user.email,
       role: user.role,
@@ -38,8 +30,8 @@ export async function verifyFirebaseToken(req, res, next) {
 
     next();
   } catch (error) {
-    console.error('Firebase token verification error:', error.message || error);
-    return res.status(401).json({ error: 'Invalid or expired Firebase token' });
+    console.error('JWT token verification error:', error.message || error);
+    return res.status(401).json({ error: 'Invalid or expired session token' });
   }
 }
 

@@ -1,10 +1,29 @@
 import Task from '../models/task.model.js';
+import Project from '../models/project.model.js';
 
 export const getTasks = async (req, res) => {
   try {
     const filter = {};
     if (req.query.projectId) {
       filter.projectId = req.query.projectId;
+    }
+
+    if (req.user && req.user.role !== 'admin') {
+      const userTeamId = req.user.teamId;
+      if (!userTeamId) {
+        return res.json([]); // User has no team, returns empty tasks
+      }
+
+      const teamProjects = await Project.find({ teamId: userTeamId }).select('_id');
+      const teamProjectIds = teamProjects.map(p => p._id);
+
+      if (filter.projectId) {
+        if (!teamProjectIds.some(id => id.toString() === filter.projectId.toString())) {
+          return res.status(403).json({ error: 'Access denied to this project\'s tasks' });
+        }
+      } else {
+        filter.projectId = { $in: teamProjectIds };
+      }
     }
 
     const tasks = await Task.find(filter)

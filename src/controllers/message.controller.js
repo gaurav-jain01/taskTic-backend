@@ -2,7 +2,10 @@ import Message from '../models/message.model.js';
 
 export const getMessages = async (req, res) => {
   try {
-    const messages = await Message.find().sort({ timestamp: -1 });
+    const filter = req.query.teamId ? { teamId: req.query.teamId } : {};
+    const messages = await Message.find(filter)
+      .populate('senderId', 'name role')
+      .sort({ timestamp: 1 });
     return res.json(messages);
   } catch (error) {
     console.error('GET /api/messages error:', error);
@@ -19,6 +22,10 @@ export const createMessage = async (req, res) => {
 
     const message = new Message({ content, senderId, teamId });
     await message.save();
+
+    // Populate sender details before returning so UI can display immediately
+    await message.populate('senderId', 'name role');
+
     return res.status(201).json(message);
   } catch (error) {
     console.error('POST /api/messages error:', error);
