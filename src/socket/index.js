@@ -1,7 +1,7 @@
-const { Server } = require('socket.io');
-const Message = require('../models/message.model');
+import { Server } from 'socket.io';
+import Message from '../models/message.model.js';
 
-module.exports = (server) => {
+export default (server) => {
   const io = new Server(server, {
     cors: {
       origin: '*',

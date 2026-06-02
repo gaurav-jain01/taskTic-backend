@@ -1,5 +1,5 @@
-const admin = require('firebase-admin');
-const User = require('../models/user.model');
+import admin from 'firebase-admin';
+import User from '../models/user.model.js';
 
 function initFirebaseAdmin() {
   if (!admin.apps.length) {
@@ -9,7 +9,7 @@ function initFirebaseAdmin() {
   }
 }
 
-async function verifyFirebaseToken(req, res, next) {
+export async function verifyFirebaseToken(req, res, next) {
   initFirebaseAdmin();
 
   const authHeader = req.headers.authorization || req.headers.Authorization;
@@ -43,7 +43,7 @@ async function verifyFirebaseToken(req, res, next) {
   }
 }
 
-function allowRoles(...allowedRoles) {
+export function allowRoles(...allowedRoles) {
   const normalizedAllowed = allowedRoles.map((role) => String(role).toLowerCase());
 
   return (req, res, next) => {
@@ -60,7 +60,3 @@ function allowRoles(...allowedRoles) {
   };
 }
 
-module.exports = {
-  verifyFirebaseToken,
-  allowRoles,
-};

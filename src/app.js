@@ -1,27 +1,26 @@
-const express = require('express');
-const http = require('http');
-const mongoose = require('mongoose');
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+import express from 'express';
+import cors from 'cors';
+import http from 'http';
+import connectDB from './config/db.js';
+import routes from './routes/index.js';
+import initSocket from './socket/index.js';
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
-const routes = require('./routes');
+connectDB();
+
 app.use('/api', routes);
-
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/tasktic';
-
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-mongoose.connection.on('connected', () => {
-  console.log('MongoDB connected');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('MongoDB connection error:', err);
-});
 
 app.get('/', (req, res) => {
   res.json({ message: 'TaskTic backend is running' });
@@ -29,7 +28,8 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 4000;
 const server = http.createServer(app);
-require('./socket')(server);
+
+initSocket(server);
 
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
