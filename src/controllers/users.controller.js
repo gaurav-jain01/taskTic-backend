@@ -2,11 +2,36 @@ import User from '../models/user.model.js';
 
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-password -firebaseUid').sort({ createdAt: -1 });
+
+    let users;
+
+    // Admin -> all users
+    if (req.user.role === 'admin') {
+
+      users = await User.find()
+        .select('-password -firebaseUid')
+        .sort({ createdAt: -1 });
+
+    }
+
+    // Manager & Member -> only users from their team
+    else {
+
+      users = await User.find({
+        teamId: req.user.teamId
+      })
+        .select('-password -firebaseUid')
+        .sort({ createdAt: -1 });
+
+    }
+
     res.status(200).json(users);
+
   } catch (error) {
     console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Server error while fetching users' });
+    res.status(500).json({
+      error: 'Server error while fetching users'
+    });
   }
 };
 

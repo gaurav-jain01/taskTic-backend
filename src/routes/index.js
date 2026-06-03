@@ -5,6 +5,8 @@ import messageRoutes from './messages.js';
 import authRoutes from './auth.js';
 import usersRoutes from './users.js';
 import teamRoutes from './teams.js';
+import activityLogRoutes from './activityLogs.js';
+import assistantRoutes from './assistant.js';
 
 const router = express.Router();
 
@@ -18,5 +20,7 @@ router.use('/messages', messageRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', usersRoutes);
 router.use('/teams', teamRoutes);
+router.use('/activity-logs', activityLogRoutes);
+router.use('/assistant', assistantRoutes);
 
 export default router;

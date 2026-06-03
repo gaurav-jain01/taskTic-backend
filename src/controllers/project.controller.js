@@ -1,12 +1,32 @@
 import Project from '../models/project.model.js';
+import ActivityLog from '../models/activityLog.model.js';
 
 export const getProjects = async (req, res) => {
   try {
-    const projects = await Project.find().populate('teamId', 'name');
+    let projects;
+
+    // Admin -> All projects
+    if (req.user.role === "admin") {
+      projects = await Project.find()
+        .populate("teamId", "name");
+    }
+
+    // Manager & Member -> Only projects of their team
+    else {
+      if (!req.user.teamId) {
+        return res.json([]);
+      }
+      projects = await Project.find({
+        teamId: req.user.teamId,
+      }).populate("teamId", "name");
+    }
+
     return res.json(projects);
   } catch (error) {
-    console.error('GET /api/projects error:', error);
-    return res.status(500).json({ error: 'Unable to fetch projects' });
+    console.error("GET /api/projects error:", error);
+    return res.status(500).json({
+      error: "Unable to fetch projects",
+    });
   }
 };
 
@@ -19,6 +39,14 @@ export const createProject = async (req, res) => {
 
     const project = new Project({ name, description, teamId });
     await project.save();
+
+    await ActivityLog.create({
+      type: 'Project Created',
+      description: `"${project.name}" created by ${req.user.name}`,
+      user: req.user.name,
+      teamId: project.teamId
+    });
+
     return res.status(201).json(project);
   } catch (error) {
     console.error('POST /api/projects error:', error);
@@ -35,6 +63,13 @@ export const updateProject = async (req, res) => {
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
+
+    await ActivityLog.create({
+      type: 'Project Updated',
+      description: `"${project.name}" was updated by ${req.user.name}`,
+      user: req.user.name,
+      teamId: project.teamId
+    });
 
     return res.json(project);
   } catch (error) {

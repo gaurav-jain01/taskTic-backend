@@ -35,18 +35,58 @@ export const createTeam = async (req, res) => {
 
 export const getTeams = async (req, res) => {
   try {
-    const teams = await Team.find().lean();
-    const users = await User.find().lean();
-    
+    let teams;
+    let users;
+
+    // Admin -> all teams
+    if (req.user.role === 'admin') {
+      teams = await Team.find().lean();
+      users = await User.find().lean();
+    }
+
+    // Manager & Member -> only their team
+    else {
+      teams = await Team.find({
+        _id: req.user.teamId
+      }).lean();
+
+      users = await User.find({
+        teamId: req.user.teamId
+      }).lean();
+    }
+
     const teamsWithMembers = teams.map(team => {
-      const members = users.filter(u => u.teamId?.toString() === team._id.toString());
-      return { ...team, members };
+      const members = users.filter(
+        u => u.teamId?.toString() === team._id.toString()
+      );
+
+      return {
+        ...team,
+        members
+      };
     });
 
     res.json(teamsWithMembers);
+
   } catch (error) {
     console.error('Error fetching teams:', error);
-    res.status(500).json({ error: 'Server error while fetching teams' });
+    res.status(500).json({
+      error: 'Server error while fetching teams'
+    });
+  }
+};
+
+export const getTeamById = async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+
+    if (!team) {
+      return res.status(404).json({ message: 'Team not found' });
+    }
+
+    res.json(team);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -79,7 +119,7 @@ export const updateTeam = async (req, res) => {
           { $set: { teamId: team._id } }
         );
       }
-      
+
       // Ensure admin always stays in the team
       await User.findByIdAndUpdate(team.adminId, { $set: { teamId: team._id } });
     }
@@ -94,7 +134,7 @@ export const updateTeam = async (req, res) => {
 export const deleteTeam = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const team = await Team.findById(id);
     if (!team) {
       return res.status(404).json({ error: 'Team not found' });

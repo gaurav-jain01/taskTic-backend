@@ -1,4 +1,5 @@
 import Message from '../models/message.model.js';
+import { getIO } from '../socket/index.js';
 
 export const getMessages = async (req, res) => {
   try {
@@ -16,19 +17,37 @@ export const getMessages = async (req, res) => {
 export const createMessage = async (req, res) => {
   try {
     const { content, senderId, teamId } = req.body;
+
     if (!content || !senderId || !teamId) {
-      return res.status(400).json({ error: 'content, senderId and teamId are required' });
+      return res.status(400).json({
+        error: 'content, senderId and teamId are required'
+      });
     }
 
-    const message = new Message({ content, senderId, teamId });
+    const message = new Message({
+      content,
+      senderId,
+      teamId
+    });
+
     await message.save();
 
-    // Populate sender details before returning so UI can display immediately
     await message.populate('senderId', 'name role');
 
+    console.log("Message Team:", teamId);
+
+
+    // Real-time emit
+    getIO()
+      .to(teamId)
+      .emit('newMessage', message);
+
     return res.status(201).json(message);
+
   } catch (error) {
     console.error('POST /api/messages error:', error);
-    return res.status(500).json({ error: 'Unable to create message' });
+    return res.status(500).json({
+      error: 'Unable to create message'
+    });
   }
 };

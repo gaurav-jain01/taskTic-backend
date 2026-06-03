@@ -6,9 +6,17 @@ const router = express.Router();
 
 router.use(verifyAuthToken);
 
-router.get('/', getTasks);
+router.get(
+    '/',
+    verifyAuthToken,
+    getTasks
+);
 router.post('/', createTask);
-router.put('/:id', updateTask);
+router.put(
+    '/:id',
+    verifyAuthToken,
+    updateTask
+);
 router.delete('/:id', deleteTask);
 
 export default router;
